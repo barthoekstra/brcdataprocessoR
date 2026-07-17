@@ -2,18 +2,22 @@
 % Please edit documentation in R/trektellen.R
 \name{extract_count_period}
 \alias{extract_count_period}
-\title{Extract count period from Trektellen website}
+\title{Extract count period from the Trektellen website}
 \usage{
 extract_count_period(station, date_str)
 }
 \arguments{
-\item{station}{Station ID or name}
+\item{station}{Station ID (1047/1048) or display name ("1. Sakhalvasho" or
+"2. Shuamta").}
 
-\item{date_str}{Date string}
+\item{date_str}{Date string ("YYYY-MM-DD").}
 }
 \value{
-NULL if failed, otherwise a list with start and end times
+NULL if the page/period could not be read, otherwise a list with
+\code{start} and \code{end} (hms) and \code{breakresumes} (a list of hms, or NULL).
 }
 \description{
-Extract count period from Trektellen website
+A thin wrapper over \code{\link[=extract_count_header]{extract_count_header()}} - they read the same count page,
+so this reuses it and returns just the counting period, with the times parsed
+to \code{\link[hms:hms]{hms::hms()}} objects as the preprocessing pipeline expects.
 }
