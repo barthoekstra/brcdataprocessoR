@@ -49,6 +49,35 @@ station_to_id <- function(station) {
        "(\"1. Sakhalvasho\" or \"2. Shuamta\")")
 }
 
+#' Read a Trektellen count page's own count date
+#'
+#' The `count/view` page shows the date it belongs to in its `<h1>` heading
+#' (e.g. "Batumi - Shuamta\nTuesday 21 October 2025"). Parsing it lets a caller
+#' verify the page it got back is actually for the date it asked for - Trektellen
+#' redirects a date with NO count to the station's most recent count, so a naive
+#' scrape of `.../20260721` would otherwise return the header of a stale, unrelated
+#' count. Month names are mapped explicitly so this does not depend on the R
+#' session locale.
+#'
+#' @param page An `xml_document` parsed from a count-view page.
+#'
+#' @returns The page's count date as "YYYY-MM-DD", or `NA_character_` if no date
+#'   could be read from the heading.
+#' @keywords internal
+count_page_date <- function(page) {
+  h1 <- rvest::html_element(page, "h1.left")
+  if (length(h1) == 0 || is.na(h1)) return(NA_character_)
+  txt <- rvest::html_text2(h1)
+  m <- regmatches(txt, regexec("([0-9]{1,2})\\s+([A-Za-z]+)\\s+([0-9]{4})", txt))[[1]]
+  if (length(m) < 4) return(NA_character_)
+  months <- c(january = 1L, february = 2L, march = 3L, april = 4L, may = 5L,
+              june = 6L, july = 7L, august = 8L, september = 9L,
+              october = 10L, november = 11L, december = 12L)
+  mo <- months[[tolower(m[[3]])]]
+  if (is.null(mo)) return(NA_character_)
+  sprintf("%04d-%02d-%02d", as.integer(m[[4]]), mo, as.integer(m[[2]]))
+}
+
 #' Extract count header metadata from the Trektellen count page
 #'
 #' Scrapes the per-count header block shown on a Trektellen `count/view` page
@@ -88,6 +117,20 @@ extract_count_header <- function(station, date_str) {
   page <- tryCatch(rvest::read_html(tt_url), error = function(e) NULL)
   if (is.null(page)) {
     message("Fetching count header from Trektellen failed, returning NULL")
+    return(NULL)
+  }
+
+  # Trektellen redirects a date with NO count to the station's most recent count
+  # (e.g. .../1048/20260721 -> .../1048/20251021), serving that stale page with a
+  # 200. Guard against scraping it as if it were `date_str`: the page names its own
+  # count date in the heading, so require that to match. A mismatch (or an
+  # unreadable heading) means there is no count on this date - an ABSENCE, which the
+  # caller must not mistake for a zero count.
+  page_date <- count_page_date(page)
+  if (is.na(page_date) || !identical(page_date, date_str)) {
+    message("Trektellen has no count for ", date_str,
+            " (page is ", if (is.na(page_date)) "undated" else page_date,
+            "), returning NULL")
     return(NULL)
   }
 
