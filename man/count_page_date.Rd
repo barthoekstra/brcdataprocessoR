@@ -15,11 +15,11 @@ could be read from the heading.
 }
 \description{
 The \code{count/view} page shows the date it belongs to in its \verb{<h1>} heading
-(e.g. "Batumi - Shuamta\nTuesday 21 October 2025"). Parsing it lets a caller
-verify the page it got back is actually for the date it asked for - Trektellen
-redirects a date with NO count to the station's most recent count, so a naive
-scrape of \code{.../20260721} would otherwise return the header of a stale, unrelated
-count. Month names are mapped explicitly so this does not depend on the R
-session locale.
+(the station name followed by e.g. "Tuesday 21 October 2025"). Parsing it
+lets a caller verify the page it got back is actually for the date it asked
+for - Trektellen redirects a date with NO count to the station's most recent
+count, so a naive scrape of \code{.../20260721} would otherwise return the header
+of a stale, unrelated count. Month names are mapped explicitly so this does
+not depend on the R session locale.
 }
 \keyword{internal}
