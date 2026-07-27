@@ -1,53 +1,144 @@
 # brcdataprocessoR <a href="https://www.batumiraptorcount.org"><img src="https://static1.squarespace.com/static/5b33912fb27e39bd89996b9d/t/5b33ac53352f535c7e8effcb/1560539069142/?format=120w" alt="BRC logo" align="right" width="175" style="max-width: 175px;"></a>
-The package processes reviewed raw [Batumi Raptor Count](https://www.batumiraptorcount.org) observations from [Trektellen](https://www.trektellen.org). It performs deterministic conversion, cross-station double-count reconciliation, and protocol flagging. Records are flagged rather than deleted.
+
+The package processes reviewed raw [Batumi Raptor Count](https://www.batumiraptorcount.org)
+observations from [Trektellen](https://www.trektellen.org). It performs
+deterministic preprocessing, conversion, cross-station double-count
+removal, and protocol flagging. Records are flagged rather than deleted.
 
 Author: Bart Hoekstra | Mail: [bart.hoekstra@batumiraptorcount.org](mailto:bart.hoekstra@batumiraptorcount.org)
 
-## General workflow
-This is the stand-alone version of the the [previous preprocessor](https://github.com/barthoekstra/brc-data-preprocessor) we originally had running on [Amazon Lambda](https://aws.amazon.com/lambda/), which automatically checked the [Trektellen](https://www.trektellen.org) site for newly uploaded [BRC counts](https://www.batumiraptorcount.org/migration-count-data) and processed these files once data became available. 
+`brcdataprocessoR` supports the regular Batumi Raptor Count data workflow:
+raw-data preprocessing, a manual review round, and canonical processing. The
+workflow preserves records. Data are flagged or returned as side outputs; the
+package does not silently delete observations.
 
-The main entry point is `brc_process()`, which accepts the exact reviewed 13-column raw schema and returns canonical data, metadata, side outputs, summaries, and provenance. It can process a single count date or a larger collection of dates.
+## Regular workflow
 
-Solar times are calculated for each distinct date with `suncalc` using the operational Batumi coordinates and `Etc/GMT-4`. The solar calculation version and coordinates are recorded in provenance.
+### 1. Preprocess raw Trektellen data
 
-For lower-level use, `brc_convert()`, `brc_reconcile_double_counts()`, and `brc_assign_protocol_filter()` expose the individual processing stages.
+Start with a raw Trektellen CSV. `preprocess_raw_trektellen_data()` selects a
+count date, retrieves count-period metadata, adds `START`, `END`, `BREAK`, and
+`RESUME` records, standardizes the fields, and returns the 13-column schema
+used by the processing pipeline.
 
-## Count metadata
-Besides checking records, the package can read the **count header** shown on a Trektellen [`count/view`](https://www.trektellen.org) page as contextual metadata about a count. This is *not* added to the record data set — it is information *about* the count (who was on station, the weather, the effort, the daily totals):
+`process_day()` orchestrates preprocessing and writes the result to `raw/`,
+the review copy to `inprogress/`, and a backup to `inprogress-backup/`.
+`process_today()` is the equivalent wrapper for the current date. `write_data()`
+writes one-date outputs as `.xlsx` files, split by station by default.
 
 ```r
-extract_count_header(1047, "2025-09-07")
-#> $station_id      : int 1047
-#> $date            : "2025-09-07"
-#> $counting_period : list(start = "06:35", end = "19:01")
-#> $count_type      : "Storks and raptors"
-#> $weather         : "Cloudy, rainy and sunny"
-#> $observers       : c("Eva Drukker", "Valentin Cordes", ...)  # the counters; coordinators among them
-#> $remark          : "Batumi and weatherforecast, be prepared for not ..."  # the count "Comments"
-#> $totals          : list(individuals = 7259L, species = 15L, hours = "12:26")
+process_day(
+  day_str = "2026-08-17",
+  tt_file = "trektellen.csv",
+  output_folder = "data-repo"
+)
 ```
 
-It scrapes the same public page `extract_count_period()` reads (no login required), matching each `"Label: value"` line, and returns a named list; any field absent on the page comes back as `NA` (or an empty vector for `observers`). `station` accepts the ID (`1047`/`1048`) or the display name (`"1. Sakhalvasho"`/`"2. Shuamta"`).
+### 2. Manually review the preprocessed data
 
-## Flagged records
-The legacy Trektellen checks remain available through `process_day()`. The refactored `brc_process()` pipeline assigns protocol flags (`0`, `1`, or `2`) and applies operational exclusions without deleting rows.
+Review the generated files in `inprogress/` using the normal coordinator or
+data-technician review process. `check_trektellen_data()` adds a `check`
+column with warnings for issues such as possible double counts, missing fields
+or timestamps, unusual morphs or locations, injured or killed birds, age/count
+mismatches, unexpected age/sex combinations, ageing-distance problems, and
+non-protocol species.
 
-The lower-level Trektellen workflow can flag records containing:
-- Records with invalid doublecount entries (e.g. not within 10 minutes or with the wrong distance code).
-- Records containing >1 bird that is injured and/or killed (rare occurrence).
-- Records lacking critical information in `datetime`, `telpost`, `speciesname`, `count` or `location` columns (very unlikely, but the possible result of a bug).
-- Records of birds in >E3 (rare occurrence).
-- Records with registered morphs for all species other than Booted Eagles (and Eleonora's Falcons).
-- Records of `HB_NONJUV`, `HB_JUV`, `BK_NONJUV` and `BK_JUV` if the number of aged birds is higher than the number of counted birds (`HB` and `BK`) within a 10-minute window around the age record.
-- Records of Honey Buzzards that should probably be single-counted (at Station 2 during the HB focus period).
-- Records of aged Honey Buzzards and Black Kites outside of expected distance codes (i.e. outside of W1-O-E1).
-- Records containing unexpected combinations of sex and/or age information.
-- Records with no timestamps, which are set to 00:00:00 during processing.
-- Records containing non-protocol species.
-- Records with age details in `W3`, `E3` and `>E3`, excluding non-juvenile harriers with a sex, juvenile `MonPalHen` and juvenile/non-juvenile eagles.
-- Records of female Pallid Harriers with `I` or `A` age (legal per protocol, though very difficult to age in the field).
+These are review prompts, not automatic deletion rules. In particular,
+double-count and missing-single-count warnings explicitly remain available for
+human assessment. The reviewed CSV is the input to the final processing step.
 
-## Todo
-- [ ] Automate download from Trektellen
-- [x] Automatically add `START` and `END` records to fetched data based on count start and end times.
-- [ ] Implement some basic tests for the flags
+### 3. Process the reviewed data
+
+`brc_process()` accepts the reviewed 13-column schema and runs the canonical
+pipeline for one count date or multiple dates:
+
+1. `brc_convert()` normalizes stations, species aliases, age/sex/morph fields,
+   timestamps, counts, and metadata records.
+2. `brc_reconcile_double_counts()` reconciles potential cross-station double
+   counts using the operational rules.
+3. `brc_assign_protocol_filter()` assigns protocol flags and applies operational
+   filter-zero exclusions.
+
+```r
+raw_path <- "reviewed-count.csv"
+reviewed <- read.csv(raw_path, stringsAsFactors = FALSE, check.names = FALSE)
+
+result <- brc_process(
+  reviewed,
+  source_artifact_sha256 = digest::digest(
+    file = raw_path,
+    algo = "sha256",
+    serialize = FALSE
+  )
+)
+
+result$data
+result$summary
+result$provenance
+```
+
+The result contains canonical observations, metadata rows, shot rows, stage
+summaries, stable source keys, and processing provenance.
+
+## Canonical input
+
+The reviewed input has these columns:
+
+```text
+datetime, telpost, speciesname, count, countback, local, age, sex,
+plumage, remark, location, migtype, counttype
+```
+
+## Protocol flags
+
+The `filter` column is a classification, not a deletion instruction:
+
+- `1`: standard protocol window, 17 August through 16 October, from sunrise + 1
+  hour through sunset - 2 hours;
+- `2`: early-morning harrier window, 27 August through 27 September, from
+  sunrise through but not including sunrise + 1 hour; and
+- `0`: outside the applicable window or overridden by an operational exclusion.
+
+All rows remain available in the returned data. Operational exclusions cover
+non-regular species, outer-east locations, and age-protocol observations in
+excluded locations.
+
+## Scientific rules
+
+The package exposes the current `operational_v1` rule profile:
+
+```r
+rules <- brc_rules("operational_v1")
+validate_brc_rules(rules$tables, rules$version)
+```
+
+The profile contains the active species vocabulary, modern aliases,
+comparable-species groups, reconciliation speeds, protocol windows, and
+exclusions. Obsolete pre-2018 compatibility rules are not part of the current
+processing profile.
+
+## Trektellen metadata helpers
+
+The preprocessing workflow can retrieve count metadata directly:
+
+```r
+period <- extract_count_period(1047, "2026-08-17")
+header <- extract_count_header(1047, "2026-08-17")
+```
+
+## Development
+
+Run the package tests with:
+
+```sh
+Rscript --vanilla -e 'testthat::test_local(".", reporter = "summary")'
+```
+
+Format R code and tests with Air:
+
+```sh
+air format R tests
+air format --check R tests
+```
+
+The package is maintained by Bart Hoekstra for the Batumi Raptor Count.
