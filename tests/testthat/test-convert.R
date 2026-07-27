@@ -17,7 +17,7 @@ test_that("operational aliases cover the modern raw vocabulary only", {
   expect_equal(nrow(aliases), 26L)
   expect_false(any(aliases$alias %in% c("HoneyBuz", "Accspec", "ShortEO")))
   expect_equal(
-    brcdatapreprocessoR:::map_converter_aliases(
+    brcdataprocessoR:::map_converter_aliases(
       c("Buz_HonBuz", "Large_FALCON", "PernisSpec", "StepEagle"),
       rep(2025L, 4L),
       rules
@@ -142,8 +142,8 @@ test_that("operational harrier staging preserves current conventions", {
     stringsAsFactors = FALSE
   )
 
-  result <- brcdatapreprocessoR:::stage_converter_species(staged)
-  result <- brcdatapreprocessoR:::normalize_age_sex_morph(result)
+  result <- brcdataprocessoR:::stage_converter_species(staged)
+  result <- brcdataprocessoR:::normalize_age_sex_morph(result)
 
   expect_equal(
     result$speciesname,

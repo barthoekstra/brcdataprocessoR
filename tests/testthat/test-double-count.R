@@ -172,7 +172,7 @@ test_that("phase-one offsets are strict and nonconfigured species are ignored", 
 
 test_that("legacy location overlap is directed and soaring-specific", {
   rules <- synthetic_dc_rules()
-  overlap <- brcdatapreprocessoR:::dc_location
+  overlap <- brcdataprocessoR:::dc_location
   expect_true(overlap("E2", "W2", 2025L, FALSE, rules))
   expect_false(overlap("W2", "E2", 2025L, FALSE, rules))
   expect_true(overlap("", "W3", 2025L, FALSE, rules))
@@ -195,7 +195,7 @@ test_that("station two may be a comparable leaf member", {
       id = 2L
     )
   )
-  expect_true(brcdatapreprocessoR:::dc_comparable(
+  expect_true(brcdataprocessoR:::dc_comparable(
     "HB",
     "Buzzard_SPEC",
     2025L,
@@ -219,13 +219,13 @@ test_that("comparability is literal membership, not an implicit self-match", {
     rules$tables$comparable_groups,
     extra
   )
-  expect_false(brcdatapreprocessoR:::dc_comparable(
+  expect_false(brcdataprocessoR:::dc_comparable(
     "ShortTE",
     "ShortTE",
     2025L,
     rules
   ))
-  expect_true(brcdatapreprocessoR:::dc_comparable(
+  expect_true(brcdataprocessoR:::dc_comparable(
     "ShortTE",
     "Raptor_SPEC",
     2025L,

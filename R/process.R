@@ -70,7 +70,7 @@ brc_process <- function(
       provenance = list(
         rule_version = rules$version,
         package_version = as.character(utils::packageVersion(
-          "brcdatapreprocessoR"
+          "brcdataprocessoR"
         )),
         source_artifact_sha256 = source_artifact_sha256,
         source_key_algorithm = converted$provenance$source_key_algorithm,

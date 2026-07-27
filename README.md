@@ -1,4 +1,4 @@
-# brcdatapreprocessoR <a href="https://www.batumiraptorcount.org"><img src="https://static1.squarespace.com/static/5b33912fb27e39bd89996b9d/t/5b33ac53352f535c7e8effcb/1560539069142/?format=120w" alt="BRC logo" align="right" width="175" style="max-width: 175px;"></a>
+# brcdataprocessoR <a href="https://www.batumiraptorcount.org"><img src="https://static1.squarespace.com/static/5b33912fb27e39bd89996b9d/t/5b33ac53352f535c7e8effcb/1560539069142/?format=120w" alt="BRC logo" align="right" width="175" style="max-width: 175px;"></a>
 The package processes reviewed raw [Batumi Raptor Count](https://www.batumiraptorcount.org) observations from [Trektellen](https://www.trektellen.org). It performs deterministic conversion, cross-station double-count reconciliation, and protocol flagging. Records are flagged rather than deleted.
 
 Author: Bart Hoekstra | Mail: [bart.hoekstra@batumiraptorcount.org](mailto:bart.hoekstra@batumiraptorcount.org)

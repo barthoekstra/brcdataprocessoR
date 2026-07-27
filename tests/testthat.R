@@ -7,6 +7,6 @@
 # * https://testthat.r-lib.org/articles/special-files.html
 
 library(testthat)
-library(brcdatapreprocessoR)
+library(brcdataprocessoR)
 
-test_check("brcdatapreprocessoR")
+test_check("brcdataprocessoR")
