@@ -139,9 +139,7 @@ brc_convert <- function(
     provenance = list(
       rule_version = rules$version,
       source_artifact_sha256 = source_artifact_sha256,
-      source_key_algorithm = "source-key-v1",
-      time_policy_id = "operational_v1_fixed_utc_plus_04",
-      timezone_name_or_fixed_offset = "Etc/GMT-4"
+      source_key_algorithm = "source-key-v1"
     )
   )
   rownames(result$data) <- NULL

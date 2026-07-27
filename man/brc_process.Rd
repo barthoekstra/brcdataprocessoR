@@ -8,7 +8,6 @@ brc_process(
   data,
   rules = brc_rules("operational_v1"),
   source_artifact_sha256,
-  time_policy = NULL,
   id_start = 0L,
   strict_mappings = TRUE
 )
@@ -19,10 +18,6 @@ brc_process(
 \item{rules}{A validated scientific rule profile.}
 
 \item{source_artifact_sha256}{SHA-256 of the caller-read source artifact.}
-
-\item{time_policy}{Explicit solar/time policy for protocol assignment. If
-omitted, it is generated with \code{brc_solar_time_policy()} from the input
-dates.}
 
 \item{id_start}{First generated identifier minus one.}
 

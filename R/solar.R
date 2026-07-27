@@ -1,24 +1,8 @@
-#' Build the operational solar-time policy
-#'
-#' Calculates date-specific sunrise and sunset times using the same coordinates,
-#' timezone, and `suncalc` call as the established BRC processing pipeline.
-#'
-#' @param dates Dates or values coercible to `Date`.
-#' @param lat Latitude in decimal degrees. Defaults to the operational Batumi
-#'   count-area coordinate.
-#' @param lon Longitude in decimal degrees. Defaults to the operational Batumi
-#'   count-area coordinate.
-#' @param timezone Timezone used for the returned wall-clock times.
-#' @param id Identifier for the resulting time policy.
-#' @return A validated time-policy list suitable for `brc_process()` or
-#'   `brc_assign_protocol_filter()`.
-#' @export
-brc_solar_time_policy <- function(
+solar_times_for_dates <- function(
   dates,
   lat = 41.690259,
   lon = 41.729722,
-  timezone = "Etc/GMT-4",
-  id = "operational-solar-suncalc-v1"
+  timezone = "Etc/GMT-4"
 ) {
   if (!requireNamespace("suncalc", quietly = TRUE)) {
     stop(
@@ -65,19 +49,18 @@ brc_solar_time_policy <- function(
     tz = timezone
   )
   structure(
-    list(
-      id = id,
+    data.frame(
+      date = format(dates, "%Y-%m-%d"),
+      sunrise = format(sun$sunrise, "%H:%M:%S", tz = timezone),
+      sunset = format(sun$sunset, "%H:%M:%S", tz = timezone),
+      stringsAsFactors = FALSE
+    ),
+    class = c("brc_solar_times", "data.frame"),
+    solar_metadata = list(
       timezone = timezone,
       latitude = lat,
       longitude = lon,
-      solar_library_version = as.character(utils::packageVersion("suncalc")),
-      solar_times = data.frame(
-        date = format(dates, "%Y-%m-%d"),
-        sunrise = format(sun$sunrise, "%H:%M:%S", tz = timezone),
-        sunset = format(sun$sunset, "%H:%M:%S", tz = timezone),
-        stringsAsFactors = FALSE
-      )
-    ),
-    class = "brc_time_policy"
+      solar_library_version = as.character(utils::packageVersion("suncalc"))
+    )
   )
 }

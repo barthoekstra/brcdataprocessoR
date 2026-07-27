@@ -26,25 +26,14 @@ protocol_row <- function(
   )
 }
 
-synthetic_time_policy <- function() {
-  solar <- data.frame(
-    date = c(
-      "2023-08-17",
-      "2023-10-16",
-      "2024-08-17",
-      "2024-08-27",
-      "2024-09-27"
-    ),
-    sunrise = rep("06:00:00", 5L),
-    sunset = rep("18:00:00", 5L),
-    stringsAsFactors = FALSE
+solar_clock <- function(date, event = "sunrise", offset = 0) {
+  solar <- brcdataprocessoR:::solar_times_for_dates(date)
+  value <- as.POSIXct(
+    paste(date, solar[[event]]),
+    format = "%Y-%m-%d %H:%M:%S",
+    tz = "Etc/GMT-4"
   )
-  list(
-    id = "synthetic-fixed-wall-clock-v1",
-    timezone = "Etc/GMT-4",
-    solar_times = solar,
-    solar_library_version = "fixture-v1"
-  )
+  format(value + offset, "%H:%M:%S", tz = "Etc/GMT-4")
 }
 
 synthetic_protocol_rules <- function(version = "operational_v1") {
@@ -121,42 +110,47 @@ synthetic_protocol_rules <- function(version = "operational_v1") {
 }
 
 test_that("standard window and normalized leap yday boundaries are inclusive", {
+  d1 <- "2023-08-17"
+  d2 <- "2023-10-16"
+  d3 <- "2024-08-17"
   x <- rbind(
-    protocol_row("2023-08-17", "07:00:00", id = 1L),
-    protocol_row("2023-08-17", "16:00:00", id = 2L),
-    protocol_row("2023-08-17", "06:59:59", id = 3L),
-    protocol_row("2023-10-16", "16:00:00", id = 4L),
-    protocol_row("2024-08-17", "07:00:00", id = 5L)
+    protocol_row(d1, solar_clock(d1, offset = 3600), id = 1L),
+    protocol_row(
+      d1,
+      solar_clock(d1, event = "sunset", offset = -7200),
+      id = 2L
+    ),
+    protocol_row(d1, solar_clock(d1, offset = 3599), id = 3L),
+    protocol_row(
+      d2,
+      solar_clock(d2, event = "sunset", offset = -7200),
+      id = 4L
+    ),
+    protocol_row(d3, solar_clock(d3, offset = 3600), id = 5L)
   )
-  result <- brc_assign_protocol_filter(
-    x,
-    synthetic_protocol_rules(),
-    synthetic_time_policy()
-  )
+  result <- brc_assign_protocol_filter(x, synthetic_protocol_rules())
   expect_equal(result$data$filter, c(1L, 1L, 0L, 1L, 1L))
   expect_equal(result$data$yday, c(229L, 229L, 229L, 289L, 229L))
 })
 
 test_that("harrier filter two uses sunrise through but not sunrise plus hour", {
+  d <- "2024-08-27"
+  end <- "2024-09-27"
   x <- rbind(
-    protocol_row("2024-08-27", "06:00:00", "Harrier_SPEC", id = 1L),
-    protocol_row("2024-08-27", "07:00:00", "Mon", id = 2L),
-    protocol_row("2024-09-27", "07:00:00", "Pal", id = 3L),
-    protocol_row("2024-08-27", "07:00:01", "Hen", id = 4L),
-    protocol_row("2024-08-27", "06:30:00", "HB", id = 5L)
+    protocol_row(d, solar_clock(d), "Harrier_SPEC", id = 1L),
+    protocol_row(d, solar_clock(d, offset = 3600), "Mon", id = 2L),
+    protocol_row(end, solar_clock(end, offset = 3600), "Pal", id = 3L),
+    protocol_row(d, solar_clock(d, offset = 3601), "Hen", id = 4L),
+    protocol_row(d, solar_clock(d, offset = 1800), "HB", id = 5L)
   )
-  result <- brc_assign_protocol_filter(
-    x,
-    synthetic_protocol_rules(),
-    synthetic_time_policy()
-  )
+  result <- brc_assign_protocol_filter(x, synthetic_protocol_rules())
   expect_equal(result$data$filter, c(2L, 1L, 1L, 1L, 0L))
 })
 
-test_that("solar policy uses the operational suncalc calculation", {
+test_that("protocol filtering uses the operational suncalc calculation", {
   skip_if_not_installed("suncalc")
   dates <- as.Date(c("2024-08-27", "2024-09-27"))
-  policy <- brc_solar_time_policy(dates)
+  solar <- brcdataprocessoR:::solar_times_for_dates(dates)
   expected <- suncalc::getSunlightTimes(
     date = dates,
     lat = 41.690259,
@@ -164,19 +158,20 @@ test_that("solar policy uses the operational suncalc calculation", {
     keep = c("sunrise", "sunset"),
     tz = "Etc/GMT-4"
   )
-  expect_equal(policy$solar_times$date, format(dates, "%Y-%m-%d"))
+  expect_equal(solar$date, format(sort(dates), "%Y-%m-%d"))
   expect_equal(
-    policy$solar_times$sunrise,
+    solar$sunrise,
     format(expected$sunrise, "%H:%M:%S", tz = "Etc/GMT-4")
   )
   expect_equal(
-    policy$solar_times$sunset,
+    solar$sunset,
     format(expected$sunset, "%H:%M:%S", tz = "Etc/GMT-4")
   )
-  expect_equal(policy$latitude, 41.690259)
-  expect_equal(policy$longitude, 41.729722)
+  metadata <- attr(solar, "solar_metadata")
+  expect_equal(metadata$latitude, 41.690259)
+  expect_equal(metadata$longitude, 41.729722)
   expect_equal(
-    policy$solar_library_version,
+    metadata$solar_library_version,
     as.character(utils::packageVersion("suncalc"))
   )
 })
@@ -188,8 +183,7 @@ test_that("location, age, and species exclusions come from operational rules", {
     protocol_row("2023-08-17", "12:00:00", "StepBuz", "E1", id = 3L),
     protocol_row("2023-08-17", "12:00:00", "Goshawk", "E1", id = 4L)
   )
-  policy <- synthetic_time_policy()
-  result <- brc_assign_protocol_filter(x, synthetic_protocol_rules(), policy)
+  result <- brc_assign_protocol_filter(x, synthetic_protocol_rules())
   expect_equal(result$data$filter, c(0L, 0L, 1L, 0L))
   expect_gte(sum(result$summary$filter_zero_by_exclusion), 3L)
 })
@@ -202,16 +196,7 @@ test_that("filter diagnostics preserve exact rules and multiple zero causes", {
     protocol_row("2011-08-17", "12:00:00", "StepBuz", "E1", id = 4L),
     protocol_row("2023-08-17", "12:00:00", "HB_JUV", "E3", id = 5L)
   )
-  policy <- synthetic_time_policy()
-  policy$solar_times <- rbind(
-    policy$solar_times,
-    data.frame(
-      date = "2011-08-17",
-      sunrise = "06:00:00",
-      sunset = "18:00:00"
-    )
-  )
-  result <- brc_assign_protocol_filter(x, synthetic_protocol_rules(), policy)
+  result <- brc_assign_protocol_filter(x, synthetic_protocol_rules())
   diagnostics <- result$diagnostics
   expect_true(any(
     diagnostics$id == 1L &
@@ -235,19 +220,11 @@ test_that("filter diagnostics preserve exact rules and multiple zero causes", {
   ))
 })
 
-test_that("time policy is explicit complete and session-pure", {
+test_that("solar calculation is automatic and session-pure", {
   x <- protocol_row("2023-08-17", "12:00:00")
   old_tz <- Sys.getenv("TZ", unset = NA_character_)
   old_options <- options()
-  expect_error(
-    brc_assign_protocol_filter(x, synthetic_protocol_rules(), list()),
-    "time_policy"
-  )
-  brc_assign_protocol_filter(
-    x,
-    synthetic_protocol_rules(),
-    synthetic_time_policy()
-  )
+  brc_assign_protocol_filter(x, synthetic_protocol_rules())
   expect_identical(Sys.getenv("TZ", unset = NA_character_), old_tz)
   expect_identical(options(), old_options)
 })
