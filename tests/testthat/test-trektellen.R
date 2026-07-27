@@ -11,16 +11,25 @@ page_with_heading <- function(heading) {
 }
 
 test_that("count_page_date reads the count date from the page heading", {
-  expect_equal(count_page_date(page_with_heading("Tuesday 21 October 2025")), "2025-10-21")
+  expect_equal(
+    count_page_date(page_with_heading("Tuesday 21 October 2025")),
+    "2025-10-21"
+  )
 })
 
 test_that("count_page_date zero-pads single-digit days and months", {
-  expect_equal(count_page_date(page_with_heading("Sunday 7 September 2025")), "2025-09-07")
+  expect_equal(
+    count_page_date(page_with_heading("Sunday 7 September 2025")),
+    "2025-09-07"
+  )
 })
 
 test_that("count_page_date does not depend on the session locale", {
   withr::with_locale(c(LC_TIME = "C"), {
-    expect_equal(count_page_date(page_with_heading("Tuesday 21 October 2025")), "2025-10-21")
+    expect_equal(
+      count_page_date(page_with_heading("Tuesday 21 October 2025")),
+      "2025-10-21"
+    )
   })
 })
 

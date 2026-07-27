@@ -39,14 +39,18 @@ extract_count_period <- function(station, date_str) {
 station_to_id <- function(station) {
   ids <- c("1. Sakhalvasho" = 1047L, "2. Shuamta" = 1048L)
   if (is.numeric(station)) {
-    if (!station %in% c(1047, 1048)) stop("Station ID should be 1047 or 1048")
+    if (!station %in% c(1047, 1048)) {
+      stop("Station ID should be 1047 or 1048")
+    }
     return(as.integer(station))
   }
   if (is.character(station) && station %in% names(ids)) {
     return(unname(ids[[station]]))
   }
-  stop("station must be an ID (1047/1048) or a name ",
-       "(\"1. Sakhalvasho\" or \"2. Shuamta\")")
+  stop(
+    "station must be an ID (1047/1048) or a name ",
+    "(\"1. Sakhalvasho\" or \"2. Shuamta\")"
+  )
 }
 
 #' Read a Trektellen count page's own count date
@@ -66,16 +70,33 @@ station_to_id <- function(station) {
 #' @keywords internal
 count_page_date <- function(page) {
   h1 <- rvest::html_element(page, "h1.left")
-  if (length(h1) == 0 || is.na(h1)) return(NA_character_)
+  if (length(h1) == 0 || is.na(h1)) {
+    return(NA_character_)
+  }
   txt <- rvest::html_text2(h1)
   pat <- "([0-9]{1,2})\\s+([A-Za-z]+)\\s+([0-9]{4})"
   m <- regmatches(txt, regexec(pat, txt))[[1]]
-  if (length(m) < 4) return(NA_character_)
-  months <- c(january = 1L, february = 2L, march = 3L, april = 4L, may = 5L,
-              june = 6L, july = 7L, august = 8L, september = 9L,
-              october = 10L, november = 11L, december = 12L)
+  if (length(m) < 4) {
+    return(NA_character_)
+  }
+  months <- c(
+    january = 1L,
+    february = 2L,
+    march = 3L,
+    april = 4L,
+    may = 5L,
+    june = 6L,
+    july = 7L,
+    august = 8L,
+    september = 9L,
+    october = 10L,
+    november = 11L,
+    december = 12L
+  )
   mo <- months[[tolower(m[[3]])]]
-  if (is.null(mo)) return(NA_character_)
+  if (is.null(mo)) {
+    return(NA_character_)
+  }
   sprintf("%04d-%02d-%02d", as.integer(m[[4]]), mo, as.integer(m[[2]]))
 }
 
@@ -129,9 +150,13 @@ extract_count_header <- function(station, date_str) {
   # which the caller must not mistake for a zero count.
   page_date <- count_page_date(page)
   if (is.na(page_date) || !identical(page_date, date_str)) {
-    message("Trektellen has no count for ", date_str,
-            " (page is ", if (is.na(page_date)) "undated" else page_date,
-            "), returning NULL")
+    message(
+      "Trektellen has no count for ",
+      date_str,
+      " (page is ",
+      if (is.na(page_date)) "undated" else page_date,
+      "), returning NULL"
+    )
     return(NULL)
   }
 
@@ -139,12 +164,16 @@ extract_count_header <- function(station, date_str) {
   lines <- trimws(strsplit(rvest::html_text2(page), "\n")[[1]])
   field <- function(label) {
     hit <- lines[startsWith(lines, paste0(label, ":"))]
-    if (length(hit) == 0) return(NA_character_)
+    if (length(hit) == 0) {
+      return(NA_character_)
+    }
     trimws(sub(sprintf("^%s:\\s*", label), "", hit[[1]]))
   }
   # Pull the first capture group of `pattern` out of `x` (NA-safe).
   grab <- function(x, pattern) {
-    if (is.na(x)) return(NA_character_)
+    if (is.na(x)) {
+      return(NA_character_)
+    }
     m <- regmatches(x, regexec(pattern, x))[[1]]
     if (length(m) >= 2) m[[2]] else NA_character_
   }
@@ -172,7 +201,7 @@ extract_count_header <- function(station, date_str) {
     trimws(strsplit(observers_raw, ",")[[1]])
   }
 
-  totals_raw <- field("Totals")  # "7259 individuals, 15 species, 12:26 hours"
+  totals_raw <- field("Totals") # "7259 individuals, 15 species, 12:26 hours"
 
   # The remark is free text at the bottom of the header cell, after the species
   # table (labelled "Comments:" on the page, and often multi-line). Grab the
@@ -184,11 +213,16 @@ extract_count_header <- function(station, date_str) {
     parts <- trimws(rvest::html_text(rvest::html_elements(td, xpath = xp)))
     parts <- parts[nzchar(parts)]
     if (length(parts)) {
-      remark <- trimws(sub("^(Comments|Remarks?|Notes?):\\s*", "",
-                           paste(parts, collapse = "\n")))
+      remark <- trimws(sub(
+        "^(Comments|Remarks?|Notes?):\\s*",
+        "",
+        paste(parts, collapse = "\n")
+      ))
     }
   }
-  if (!is.na(remark) && !nzchar(remark)) remark <- NA_character_
+  if (!is.na(remark) && !nzchar(remark)) {
+    remark <- NA_character_
+  }
 
   list(
     station_id = station_id,
