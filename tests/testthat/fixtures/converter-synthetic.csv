@@ -1,0 +1,6 @@
+datetime,telpost,speciesname,count,countback,local,age,sex,plumage,remark,location,migtype,counttype
+2025-08-12 11:58:41,1047,HB,1,0,0,J,M,D,synthetic;remark,w1,Injured,S
+2025-08-13 12:00:00,2. Shuamta,HB,2,0,0,,Female,,,E2,,D
+2025-08-14 13:00:00,1. Sakhalvasho,HB_JUV,3,0,0,Adult,,L,,O,,
+2025-08-15 06:00:00,1,START,1,,,,,,,,,
+2025-08-16 09:00:00,2,SHOT,1,0,0,,,,synthetic shot,E1,,

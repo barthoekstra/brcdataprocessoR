@@ -1,21 +1,28 @@
 Package: brcdatapreprocessoR
 Title: Batumi Raptor Count data preprocessor
-Version: 0.0.0.9000
+Version: 1.0.0
 Authors@R: 
     person("Bart", "Hoekstra", , "bart.hoekstra@batumiraptorcount.org", role = c("aut", "cre"))
-Description: The Batumi Raptor Count runs highly standarized monitoring of raptor migration in the
-    Batumi bottleneck. This package is used to flag (not remove!) records with possible mistakes.
+Author: Bart Hoekstra [aut, cre]
+Maintainer: Bart Hoekstra <bart.hoekstra@batumiraptorcount.org>
+Description: Provides deterministic conversion, double-count reconciliation, and
+    protocol flagging for reviewed Batumi Raptor Count observations. The package
+    preserves source records and records scientific processing provenance.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Imports: 
+    digest,
     dplyr,
     readr,
-    writexl,
     lubridate,
     hms,
-    rvest
+    rvest,
+    suncalc,
+    writexl
 Suggests: 
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    withr,
+    xml2
 Config/testthat/edition: 3
