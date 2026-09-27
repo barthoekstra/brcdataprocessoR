@@ -97,6 +97,7 @@ expected_combinations <- list(
     list(NA_character_, NA_character_)
   ),
   ImperialE = list(age = c("J", "I", "A"), sex = NULL),
+  Kite_SPEC = list(age = NULL, sex = NULL),
   Lanner = list(age = c("J", "I", "A", "Non-Juv", NA_character_), sex = NULL),
   `Large EAGLE` = list(
     age = c("J", "I", "A", "Non-Juv", NA_character_),
@@ -152,6 +153,7 @@ expected_combinations <- list(
     sex = NULL
   ),
   Raptor_SPEC = list(age = NULL, sex = NULL),
+  RedKite = list(age = NULL, sex = NULL),
   Roller = list(age = NULL, sex = NULL),
   SakerF = list(age = c("J", "I", "A", "Non-Juv"), sex = NULL),
   ShortTE = list(age = c("J", "I", "A", "Non-Juv", NA_character_), sex = NULL),
