@@ -73,12 +73,15 @@ result <- brc_process(
 )
 
 result$data
+result$rejected
 result$summary
 result$provenance
 ```
 
 The result contains canonical observations, metadata rows, shot rows, stage
 summaries, stable source keys, and processing provenance.
+With `strict_mappings = FALSE`, unknown species are returned in `rejected`
+with their source keys and rejection reasons.
 
 ## Canonical input
 

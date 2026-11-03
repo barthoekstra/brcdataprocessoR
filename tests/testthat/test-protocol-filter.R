@@ -228,3 +228,12 @@ test_that("solar calculation is automatic and session-pure", {
   expect_identical(Sys.getenv("TZ", unset = NA_character_), old_tz)
   expect_identical(options(), old_options)
 })
+
+test_that("matching solar dates preserves calculation metadata", {
+  dates <- as.Date(c("2025-09-10", "2025-08-17", "2025-09-10"))
+  solar <- brcdataprocessoR:::solar_times_for_dates(dates)
+  matched <- brcdataprocessoR:::match_filter_solar(dates, solar)
+
+  expect_equal(matched$sunrise, solar$sunrise[c(2L, 1L, 2L)])
+  expect_identical(attr(matched, "solar_metadata"), attr(solar, "solar_metadata"))
+})

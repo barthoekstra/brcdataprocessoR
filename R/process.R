@@ -8,8 +8,8 @@
 #' @param source_artifact_sha256 SHA-256 of the caller-read source artifact.
 #' @param id_start First generated identifier minus one.
 #' @param strict_mappings Whether unknown species mappings are errors.
-#' @return A `brc_result` with canonical data, side outputs, stage summaries,
-#'   and provenance.
+#' @return A `brc_result` with canonical data, metadata, shots, rejected rows,
+#'   stage summaries, and provenance.
 #' @export
 brc_process <- function(
   data,
@@ -54,6 +54,7 @@ brc_process <- function(
       data = filtered$data,
       metadata = converted$metadata,
       shots = converted$shots,
+      rejected = converted$rejected,
       summary = list(
         convert = converted$summary,
         double_count = reconciled$summary,

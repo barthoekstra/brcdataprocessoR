@@ -24,8 +24,8 @@ brc_process(
 \item{strict_mappings}{Whether unknown species mappings are errors.}
 }
 \value{
-A \code{brc_result} with canonical data, side outputs, stage summaries,
-and provenance.
+A \code{brc_result} with canonical data, metadata, shots, rejected rows,
+stage summaries, and provenance.
 }
 \description{
 Runs conversion, double-count reconciliation, and protocol assignment without

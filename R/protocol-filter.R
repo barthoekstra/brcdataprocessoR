@@ -234,7 +234,9 @@ match_filter_solar <- function(dates, solar) {
       call. = FALSE
     )
   }
-  solar[index, c("sunrise", "sunset"), drop = FALSE]
+  matched <- solar[index, c("sunrise", "sunset"), drop = FALSE]
+  attr(matched, "solar_metadata") <- attr(solar, "solar_metadata")
+  matched
 }
 
 filter_window_active <- function(year, yday, window, normalized = TRUE) {
