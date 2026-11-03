@@ -365,9 +365,9 @@ check_trektellen_data <- function(data) {
   # -- Expected age/sex combinations -------------------------------------------
   unexpected_age_records <- integer(0)
   unexpected_sex_records <- integer(0)
-  unexpected_harrier_records <- integer(0)
+  unexpected_combination_records <- integer(0)
 
-  harriers <- c("MonPalHen", "Mon", "Pal", "Hen", "Marsh")
+  paired_species <- c("MonPalHen", "Mon", "Pal", "Hen", "Marsh", "Pernis_SPEC")
 
   for (sp in names(expected_combinations)) {
     details <- expected_combinations[[sp]]
@@ -377,7 +377,7 @@ check_trektellen_data <- function(data) {
     }
     species_records <- data[species_records_idx, , drop = FALSE]
 
-    if (sp %in% harriers) {
+    if (sp %in% paired_species) {
       expected_pairs <- details
       idx_ok <- integer(0)
       for (pair in expected_pairs) {
@@ -397,8 +397,8 @@ check_trektellen_data <- function(data) {
       idx_all <- seq_len(nrow(species_records))
       unexpected_local <- setdiff(idx_all, idx_ok)
       if (length(unexpected_local) > 0) {
-        unexpected_harrier_records <- c(
-          unexpected_harrier_records,
+        unexpected_combination_records <- c(
+          unexpected_combination_records,
           species_records_idx[unexpected_local]
         )
       }
@@ -460,7 +460,7 @@ check_trektellen_data <- function(data) {
 
   add_flag(unexpected_age_records, "unexpected age")
   add_flag(unexpected_sex_records, "unexpected sex")
-  add_flag(unexpected_harrier_records, "unexpected species+age+sex combination")
+  add_flag(unexpected_combination_records, "unexpected species+age+sex combination")
   add_flag(ageing_outside_permitted_distances, "ageing distance")
   add_flag(non_singlecount_hb, "singlecount missing? (leave as is)")
   add_flag(

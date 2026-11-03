@@ -57,6 +57,10 @@ overlapping_zones <- list(
 # - NULL in 'age' or 'sex' means it is NOT expected (i.e., value should be NA in the data)
 # - Include NA_character_ in vectors where NA is allowed as a valid 'missing' option
 expected_combinations <- list(
+  BeardedV = list(
+    age = c("J", "I", "A", "Non-Juv", NA_character_),
+    sex = NULL
+  ),
   BK = list(age = NULL, sex = NULL),
   BK_JUV = list(age = NULL, sex = NULL),
   BK_NONJUV = list(age = NULL, sex = NULL),
@@ -64,6 +68,14 @@ expected_combinations <- list(
   BlaStork = list(age = c("J", "I", "A", "Non-Juv", NA_character_), sex = NULL),
   BootedE = list(age = c("J", "Non-Juv", NA_character_), sex = NULL),
   Buzzard_SPEC = list(age = NULL, sex = NULL),
+  BWKite = list(
+    age = c("J", "I", "A", "Non-Juv", NA_character_),
+    sex = NULL
+  ),
+  CommonBuz = list(
+    age = c("J", "I", "A", "Non-Juv", NA_character_),
+    sex = NULL
+  ),
   CrestedHB = list(age = c("J", "A"), sex = c("M", "F")),
   DalmatianP = list(
     age = c("J", "I", "A", "Non-Juv", NA_character_),
@@ -152,9 +164,20 @@ expected_combinations <- list(
     age = c("J", "I", "A", "Non-Juv", NA_character_),
     sex = NULL
   ),
+  Pernis_SPEC = list(
+    list("J", NA_character_),
+    list("A", "M"),
+    list("A", "F"),
+    list("A", NA_character_),
+    list(NA_character_, NA_character_)
+  ),
   Raptor_SPEC = list(age = NULL, sex = NULL),
   RedKite = list(age = NULL, sex = NULL),
   Roller = list(age = NULL, sex = NULL),
+  RoughLB = list(
+    age = c("J", "I", "A", "Non-Juv", NA_character_),
+    sex = NULL
+  ),
   SakerF = list(age = c("J", "I", "A", "Non-Juv"), sex = NULL),
   ShortTE = list(age = c("J", "I", "A", "Non-Juv", NA_character_), sex = NULL),
   StepBuz = list(age = c("J", "I", "A", "Non-Juv", NA_character_), sex = NULL),
@@ -162,8 +185,8 @@ expected_combinations <- list(
   StockD = list(age = NULL, sex = NULL),
   Stork_SPEC = list(age = NULL, sex = NULL),
   TurtleD = list(age = NULL, sex = NULL),
-  WhiteP = list(age = c("J", "I", "A", "Non-Juv", NA_character_), sex = NULL),
   WhiStork = list(age = c("J", "A", "Non-Juv", NA_character_), sex = NULL),
+  WhiteP = list(age = c("J", "I", "A", "Non-Juv", NA_character_), sex = NULL),
   WhiteTE = list(age = c("J", "I", "A", "Non-Juv"), sex = NULL),
   WoodP = list(age = NULL, sex = NULL)
 )
