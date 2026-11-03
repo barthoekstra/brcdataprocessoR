@@ -245,20 +245,11 @@ escape_latex_text <- function(value) {
 }
 
 solar_time_to_minute <- function(time) {
-  fields <- strsplit(time, ":", fixed = TRUE)
-  seconds <- vapply(
-    fields,
-    function(value) {
-      as.integer(value[[1L]]) * 3600L +
-        as.integer(value[[2L]]) * 60L +
-        as.integer(value[[3L]])
-    },
-    integer(1L)
-  )
+  seconds <- filter_clock_seconds(time)
   rounded_minutes <- floor((seconds + 30) / 60)
-  paste0(
+  sprintf(
+    "%d:%02d",
     rounded_minutes %/% 60 %% 24,
-    ":",
-    sprintf("%02d", rounded_minutes %% 60)
+    rounded_minutes %% 60
   )
 }

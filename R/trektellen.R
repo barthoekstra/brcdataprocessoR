@@ -93,8 +93,8 @@ count_page_date <- function(page) {
     november = 11L,
     december = 12L
   )
-  mo <- months[[tolower(m[[3]])]]
-  if (is.null(mo)) {
+  mo <- unname(months[tolower(m[[3]])])
+  if (is.na(mo)) {
     return(NA_character_)
   }
   sprintf("%04d-%02d-%02d", as.integer(m[[4]]), mo, as.integer(m[[2]]))

@@ -1,3 +1,11 @@
+test_that("solar display rounds seconds and wraps midnight", {
+  expect_identical(
+    solar_time_to_minute(c("06:20:29", "06:20:30", "23:59:30", "00:00:00")),
+    c("6:20", "6:21", "0:00", "0:00")
+  )
+  expect_identical(solar_time_to_minute(character()), character())
+})
+
 test_that("protocol solar table reproduces the requested LaTeX layout", {
   table <- brc_sunrise_sunset_latex(2025)
 

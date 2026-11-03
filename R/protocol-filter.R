@@ -59,8 +59,7 @@ brc_assign_protocol_filter <- function(
   standard_active <- filter_window_active(
     years,
     yday,
-    standard,
-    normalized = TRUE
+    standard
   )
   out$filter[
     standard_active &
@@ -79,8 +78,7 @@ brc_assign_protocol_filter <- function(
   harrier_active <- filter_window_active(
     years,
     yday,
-    harrier,
-    normalized = TRUE
+    harrier
   )
   out$filter[
     harrier_active &
@@ -239,7 +237,7 @@ match_filter_solar <- function(dates, solar) {
   matched
 }
 
-filter_window_active <- function(year, yday, window, normalized = TRUE) {
+filter_window_active <- function(year, yday, window) {
   start <- normalized_filter_yday(as.Date(paste0(
     "2023-",
     window$start_month_day[[1L]]

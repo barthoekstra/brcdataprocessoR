@@ -37,6 +37,15 @@ test_that("count_page_date returns NA when the heading carries no date", {
   expect_true(is.na(count_page_date(page_with_heading("Batumi - Shuamta"))))
 })
 
+test_that("count_page_date returns NA for an unrecognized month", {
+  page <- page_with_heading("Tuesday 21 Octember 2025")
+  expect_identical(count_page_date(page), NA_character_)
+  expect_message(
+    expect_null(parse_count_header(page, 1048L, "2025-10-21")),
+    "undated"
+  )
+})
+
 test_that("count_page_date returns NA when there is no heading at all", {
   page <- xml2::read_html("<html><body><p>no heading here</p></body></html>")
   expect_true(is.na(count_page_date(page)))
