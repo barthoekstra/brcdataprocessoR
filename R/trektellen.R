@@ -142,6 +142,11 @@ extract_count_header <- function(station, date_str) {
     return(NULL)
   }
 
+  parse_count_header(page, station_id, date_str)
+}
+
+# Parse separately so header layouts can be regression-tested without HTTP.
+parse_count_header <- function(page, station_id, date_str) {
   # Trektellen redirects a date with NO count to the station's most recent
   # count (e.g. .../1048/20260721 -> .../1048/20251021), serving that stale page
   # with a 200. Guard against scraping it as if it were `date_str`: the page
@@ -162,12 +167,23 @@ extract_count_header <- function(station, date_str) {
 
   # The header renders each field on its own line as "Label: value".
   lines <- trimws(strsplit(rvest::html_text2(page), "\n")[[1]])
+  multiple_periods <- any(grepl("^Counting period:.*&", lines))
   field <- function(label) {
     hit <- lines[startsWith(lines, paste0(label, ":"))]
+    # Multiple uploads use labels such as "Weather (first period)". Include
+    # all documented periods; an empty second upload must not hide the first.
+    if (multiple_periods && label %in% c("Weather", "Observers")) {
+      qualified <- lines[grepl(
+        paste0("^", label, " \\([^)]* period\\):"), lines
+      )]
+      hit <- c(hit, qualified)
+    }
     if (length(hit) == 0) {
       return(NA_character_)
     }
-    trimws(sub(sprintf("^%s:\\s*", label), "", hit[[1]]))
+    values <- trimws(sub("^[^:]+:\\s*", "", hit))
+    values <- unique(values[nzchar(values)])
+    if (length(values)) paste(values, collapse = ", ") else NA_character_
   }
   # Pull the first capture group of `pattern` out of `x` (NA-safe).
   grab <- function(x, pattern) {
