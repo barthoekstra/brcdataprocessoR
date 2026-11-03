@@ -24,24 +24,30 @@ write_data <- function(
   data$datetime <- format(data$datetime, "%Y-%m-%d %H:%M:%S", trim = TRUE)
 
   if (split_by_station) {
-    file_out_s1 <- file.path(folder, paste0(datestring_out, "_S1.xlsx"))
-    file_out_s2 <- file.path(folder, paste0(datestring_out, "_S2.xlsx"))
-
-    if ((file.exists(file_out_s1) | file.exists(file_out_s2)) & !overwrite) {
-      stop("Files already exist.")
-    }
-
-    station1 <- subset(data, data$telpost == "1. Sakhalvasho")
-    station2 <- subset(data, data$telpost == "2. Shuamta")
-
-    writexl::write_xlsx(station1, file_out_s1)
-    writexl::write_xlsx(station2, file_out_s2)
+    files <- file.path(folder, paste0(datestring_out, c("_S1.xlsx", "_S2.xlsx")))
+    outputs <- list(
+      subset(data, data$telpost == "1. Sakhalvasho"),
+      subset(data, data$telpost == "2. Shuamta")
+    )
   } else {
-    file_out <- file.path(folder, paste0(datestring_out, ".xlsx"))
+    files <- file.path(folder, paste0(datestring_out, ".xlsx"))
+    outputs <- list(data)
+  }
+  if (any(file.exists(files)) && !overwrite) {
+    stop("Files already exist.")
+  }
 
-    if (file.exists(file_out) & !overwrite) {
-      stop("File alreadys exists.")
+  # Finish both workbooks before replacing any existing review files.
+  staged <- vapply(files, function(path) {
+    tempfile(tmpdir = dirname(path), fileext = ".xlsx")
+  }, character(1))
+  on.exit(unlink(staged), add = TRUE)
+  for (i in seq_along(files)) {
+    writexl::write_xlsx(outputs[[i]], staged[[i]])
+  }
+  for (i in seq_along(files)) {
+    if (!file.rename(staged[[i]], files[[i]])) {
+      stop("Could not move workbook to ", files[[i]], call. = FALSE)
     }
-    writexl::write_xlsx(data, file_out)
   }
 }
