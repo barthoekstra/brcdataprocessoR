@@ -1,7 +1,8 @@
 #' Preprocess RAW Trektellen CSV to the standardised BRC form
 #'
 #' @param csv_path Path to .csv file with RAW Trektellen counts
-#' @param date_str Date string in YYYY-MM-DD format to filter data from RAW counts
+#' @param date_str Date string in YYYY-MM-DD format to filter data from RAW counts.
+#'   `NULL` keeps all dates without retrieving count-period metadata.
 #'
 #' @returns a pre-processed dataframe which follows BRC data formatting
 #' @export
@@ -43,42 +44,32 @@ preprocess_raw_trektellen_data <- function(csv_path, date_str = NULL) {
       stop("Date selection resulted in 0 rows")
     }
 
-    times_s1 <- extract_count_period(1047, date_str)
-    times_s2 <- extract_count_period(1048, date_str)
-
-    if (!is.null(times_s1) & !is.null(times_s2)) {
-      timestamps <- hms::as_hms(c(
-        times_s1["start"][[1]],
-        times_s2["start"][[1]],
-        times_s1["end"][[1]],
-        times_s2["end"][[1]]
-      ))
-    } else {
-      timestamps <- hms::hms(
-        hours = c(0, 0, 23, 23),
-        minutes = c(0, 0, 59, 59),
-        seconds = c(0, 0, 59, 59)
+    for (station in c(1047, 1048)) {
+      period <- extract_count_period(station, date_str)
+      if (is.null(period)) {
+        if (!any(data$telpost == station, na.rm = TRUE)) {
+          next
+        }
+        warning(
+          "Count times for station ", station,
+          " are unavailable; using placeholder START/END times.",
+          call. = FALSE
+        )
+        period <- list(start = hms::as_hms(0), end = hms::as_hms(86399))
+      }
+      times <- data.frame(
+        date = rep(date_Date, 2),
+        timestamp = hms::as_hms(c(period$start, period$end)),
+        telpost = station,
+        speciesname = c("START", "END"),
+        location = "O",
+        count = 1
       )
+      data <- dplyr::bind_rows(data, times)
+      if (!is.null(period$breakresumes)) {
+        data <- add_breakresume(data, date_Date, period$breakresumes, station)
+      }
     }
-
-    # Add dummy start and end times
-    times <- data.frame(
-      date = rep(date_Date, 4),
-      timestamp = timestamps,
-      telpost = c(1047, 1048, 1047, 1048),
-      speciesname = c("START", "START", "END", "END"),
-      location = rep("O", 4),
-      count = 1
-    )
-    data <- dplyr::bind_rows(times[1:2, ], data, times[3:4, ])
-  }
-
-  # Add BREAK-RESUME records
-  if (!is.null(times_s1$breakresumes)) {
-    data <- add_breakresume(data, date_Date, times_s1$breakresumes, 1047)
-  }
-  if (!is.null(times_s2$breakresumes)) {
-    data <- add_breakresume(data, date_Date, times_s2$breakresumes, 1048)
   }
 
   # Change timestamp to 00:00:00 if timestamp was missing

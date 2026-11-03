@@ -9,7 +9,8 @@ preprocess_raw_trektellen_data(csv_path, date_str = NULL)
 \arguments{
 \item{csv_path}{Path to .csv file with RAW Trektellen counts}
 
-\item{date_str}{Date string in YYYY-MM-DD format to filter data from RAW counts}
+\item{date_str}{Date string in YYYY-MM-DD format to filter data from RAW counts.
+\code{NULL} keeps all dates without retrieving count-period metadata.}
 }
 \value{
 a pre-processed dataframe which follows BRC data formatting

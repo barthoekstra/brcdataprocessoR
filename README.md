@@ -20,6 +20,10 @@ Start with a raw Trektellen CSV. `preprocess_raw_trektellen_data()` selects a
 count date, retrieves count-period metadata, adds `START`, `END`, `BREAK`, and
 `RESUME` records, standardizes the fields, and returns the 13-column schema
 used by the processing pipeline.
+Overlapping uploads are merged before breaks are derived. If a station has
+observations but its count times are unavailable, preprocessing warns and uses
+placeholder START/END times for that station; the other station's times remain
+intact. With no `date_str`, all observations are kept without fetching metadata.
 
 `process_day()` orchestrates preprocessing and writes the result to `raw/`,
 the review copy to `inprogress/`, and a backup to `inprogress-backup/`.

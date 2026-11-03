@@ -194,21 +194,7 @@ parse_count_header <- function(page, station_id, date_str) {
     if (length(m) >= 2) m[[2]] else NA_character_
   }
 
-  # "Counting period" is "06:35 - 19:01", or "&"-joined pairs when the count
-  # paused; split on both separators, keeping break/resume times in the middle.
-  period_raw <- field("Counting period")
-  times <- if (is.na(period_raw)) {
-    character(0)
-  } else {
-    trimws(strsplit(period_raw, "[-&]")[[1]])
-  }
-  times <- times[nzchar(times)]
-  n <- length(times)
-  counting_period <- list(
-    start = if (n >= 1) times[[1]] else NA_character_,
-    end = if (n >= 1) times[[n]] else NA_character_,
-    breakresumes = if (n > 2) times[2:(n - 1)] else character(0)
-  )
+  counting_period <- parse_counting_period(field("Counting period"))
 
   observers_raw <- field("Observers")
   observers <- if (is.na(observers_raw)) {
@@ -254,4 +240,34 @@ parse_count_header <- function(page, station_id, date_str) {
       hours = grab(totals_raw, "([0-9:]+) hours")
     )
   )
+}
+
+
+parse_counting_period <- function(value) {
+  missing_period <- list(
+    start = NA_character_, end = NA_character_, breakresumes = character()
+  )
+  if (is.na(value)) {
+    return(missing_period)
+  }
+  intervals <- strsplit(strsplit(value, "&", fixed = TRUE)[[1L]], "-", fixed = TRUE)
+  if (!length(intervals) || any(lengths(intervals) != 2L)) {
+    return(missing_period)
+  }
+  intervals <- matrix(trimws(unlist(intervals)), ncol = 2L, byrow = TRUE)
+  valid_clock <- "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+  if (any(!grepl(valid_clock, intervals)) || any(intervals[, 1L] > intervals[, 2L])) {
+    return(missing_period)
+  }
+  intervals <- intervals[order(intervals[, 1L]), , drop = FALSE]
+  start <- intervals[1L, 1L]
+  end <- intervals[1L, 2L]
+  breaks <- character()
+  for (i in seq_len(nrow(intervals))[-1L]) {
+    if (intervals[i, 1L] > end) {
+      breaks <- c(breaks, end, intervals[i, 1L])
+    }
+    end <- max(end, intervals[i, 2L])
+  }
+  list(start = start, end = end, breakresumes = breaks)
 }

@@ -44,3 +44,21 @@ test_that("ordinary headers and missing metadata keep their existing meaning", {
   expect_true(is.na(h$weather))
   expect_length(h$observers, 0)
 })
+
+test_that("overlapping uploads are merged before deriving breaks", {
+  h <- parse_header("07:04 - 17:02 & 07:11 - 17:55", "")
+  expect_equal(h$counting_period, list(start = "07:04", end = "17:55", breakresumes = character()))
+  h <- parse_header("10:00 - 11:00 & 07:00 - 12:00 & 13:00 - 18:00", "")
+  expect_equal(h$counting_period, list(start = "07:00", end = "18:00", breakresumes = c("12:00", "13:00")))
+  h <- parse_header("07:00 - 12:00 & 12:00 - 18:00", "")
+  expect_length(h$counting_period$breakresumes, 0L)
+})
+
+test_that("malformed counting periods cannot become effort records", {
+  for (period in c("07:00", "07:00 - 12:00 & 13:00", "18:00 - 07:00", "25:00 - 26:00", "unknown")) {
+    h <- parse_header(period, "")
+    expect_true(is.na(h$counting_period$start), info = period)
+    expect_true(is.na(h$counting_period$end), info = period)
+    expect_length(h$counting_period$breakresumes, 0L)
+  }
+})
