@@ -139,11 +139,20 @@ preprocess_raw_trektellen_data <- function(csv_path, date_str = NULL) {
 #' several common data issues in the 'check' column.
 #' @export
 check_trektellen_data <- function(data) {
-  # Season parameters
-  season_params <- get_season_params(unique(lubridate::year(data$datetime)))
+  oblig_cols <- c("datetime", "telpost", "speciesname", "count", "location")
+  gap_records <- which(apply(is.na(data[, oblig_cols, drop = FALSE]), 1, any))
+  dates <- lubridate::date(data$datetime)
+  in_hb_focus <- rep(FALSE, nrow(data))
+  for (year in unique(lubridate::year(dates[!is.na(dates)]))) {
+    season_params <- get_season_params(year)
+    in_hb_focus <- in_hb_focus | (
+      !is.na(dates) & dates >= season_params["hb_focus_start"] &
+        dates <= season_params["hb_focus_end"]
+    )
+  }
 
   # Check doublecounts
-  dc_idx <- which(data$counttype == "D")
+  dc_idx <- setdiff(which(data$counttype == "D"), gap_records)
   nr_doublecounts <- length(dc_idx)
 
   suspect_dc_records <- integer(0)
@@ -209,20 +218,20 @@ check_trektellen_data <- function(data) {
       j <- j + 2
     }
   }
+  if (j == nr_doublecounts) {
+    suspect_dc_records <- c(suspect_dc_records, dc_idx[j])
+  }
 
   # Check if records contain protocol species or protocol codes
   codes <- c("START", "END", "SHOT", "BREAK", "RESUME")
-  nonprotocol_species <- !(data$speciesname %in% names(expected_combinations)) &
+  nonprotocol_species <- !is.na(data$speciesname) &
+    !(data$speciesname %in% names(expected_combinations)) &
     !(data$speciesname %in% codes)
   nonprotocol_species_records <- which(nonprotocol_species)
 
   # Migtype records in groups > 1
   many_migtype <- !is.na(data$migtype) & (data$count > 1)
   suspect_migtype_records <- which(many_migtype)
-
-  # Obligatory columns have info
-  oblig_cols <- c("datetime", "telpost", "speciesname", "count", "location")
-  gap_records <- which(apply(is.na(data[, oblig_cols, drop = FALSE]), 1, any))
 
   # Location == >E3
   suspect_location_records <- which(data$location == ">E3")
@@ -240,7 +249,8 @@ check_trektellen_data <- function(data) {
 
   # HB aged vs total checks (within time window, by station/location)
   HB_codes <- c("HB", "HB_NONJUV", "HB_JUV")
-  HBs <- data[data$speciesname %in% HB_codes, , drop = FALSE]
+  hb_idx <- setdiff(which(data$speciesname %in% HB_codes), gap_records)
+  HBs <- data[hb_idx, , drop = FALSE]
   count_age_mismatch_records_hb <- integer(0)
 
   if (nrow(HBs) > 0) {
@@ -253,9 +263,8 @@ check_trektellen_data <- function(data) {
       # Shuamta focus window exception
       if (
         row$telpost == "2. Shuamta" &&
-          !row$counttype == "S" &&
-          row$datetime >= season_params["hb_focus_start"] &&
-          row$datetime <= season_params["hb_focus_end"]
+          !(row$counttype %in% "S") &&
+          in_hb_focus[hb_idx[i]]
       ) {
         next
       }
@@ -284,7 +293,7 @@ check_trektellen_data <- function(data) {
 
       if (total_HB_NONJUV + total_HB_JUV > total_HB) {
         # record index in original data
-        orig_idx <- which(data$speciesname %in% HB_codes)[i]
+        orig_idx <- hb_idx[i]
         count_age_mismatch_records_hb <- c(
           count_age_mismatch_records_hb,
           orig_idx
@@ -295,7 +304,8 @@ check_trektellen_data <- function(data) {
 
   # BK aged vs total checks
   BK_codes <- c("BK", "BK_NONJUV", "BK_JUV")
-  BKs <- data[data$speciesname %in% BK_codes, , drop = FALSE]
+  bk_idx <- setdiff(which(data$speciesname %in% BK_codes), gap_records)
+  BKs <- data[bk_idx, , drop = FALSE]
   count_age_mismatch_records_bk <- integer(0)
 
   if (nrow(BKs) > 0) {
@@ -328,7 +338,7 @@ check_trektellen_data <- function(data) {
       )
 
       if (total_BK_NONJUV + total_BK_JUV > total_BK) {
-        orig_idx <- which(data$speciesname %in% BK_codes)[i]
+        orig_idx <- bk_idx[i]
         count_age_mismatch_records_bk <- c(
           count_age_mismatch_records_bk,
           orig_idx
@@ -340,9 +350,8 @@ check_trektellen_data <- function(data) {
   # Non-singlecounted HB at station 2 within HB focus period
   non_singlecount_hb <- which(
     data$speciesname == "HB" &
-      data$counttype != "S" &
-      data$datetime >= season_params["hb_focus_start"] &
-      data$datetime <= season_params["hb_focus_end"] &
+      !(data$counttype %in% "S") &
+      in_hb_focus &
       data$telpost == "2. Shuamta"
   )
 
